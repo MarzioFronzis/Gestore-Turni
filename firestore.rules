@@ -1,0 +1,74 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isLoggato() {
+      return request.auth != null;
+    }
+
+    function profilo() {
+      return get(/databases/$(database)/documents/utenti/$(request.auth.uid)).data;
+    }
+
+    function isTitolare() {
+      return isLoggato() && profilo().ruolo == "titolare";
+    }
+
+    function mioDipendenteId() {
+      return profilo().dipendenteId;
+    }
+
+    // Profili utente: ognuno legge solo il proprio, solo il titolare scrive
+    match /utenti/{uid} {
+      allow read: if isLoggato() && (request.auth.uid == uid || isTitolare());
+      allow write: if isTitolare();
+    }
+
+    // Dipendenti: tutti i loggati leggono (serve per la griglia e i cambi turno),
+    // solo il titolare crea/modifica/elimina
+    match /dipendenti/{id} {
+      allow read: if isLoggato();
+      allow write: if isTitolare();
+    }
+
+    // Turni: tutti leggono. Il titolare scrive sempre.
+    // Un dipendente può modificare SOLO il campo dipendenteId di un proprio turno
+    // (usato dal flusso di accettazione cambio) — gestito lato client con verifica
+    // conflitti prima della scrittura; qui limitiamo comunque la creazione libera.
+    match /turni/{id} {
+      allow read: if isLoggato();
+      allow create, delete: if isTitolare();
+      allow update: if isTitolare() ||
+        (isLoggato() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["dipendenteId"]));
+    }
+
+    // Turni ricorrenti: solo il titolare
+    match /turniRicorrenti/{id} {
+      allow read: if isLoggato();
+      allow write: if isTitolare();
+    }
+
+    // Festività: tutti leggono, solo il titolare scrive
+    match /festivita/{id} {
+      allow read: if isLoggato();
+      allow write: if isTitolare();
+    }
+
+    // Assenze: il dipendente crea le proprie richieste e legge le proprie;
+    // il titolare legge/scrive tutto (per approvare/rifiutare)
+    match /assenze/{id} {
+      allow read: if isTitolare() || (isLoggato() && resource.data.dipendenteId == mioDipendenteId());
+      allow create: if isLoggato() && request.resource.data.dipendenteId == mioDipendenteId();
+      allow update: if isTitolare();
+    }
+
+    // Richieste di cambio turno: leggibili da chi propone, chi riceve, e il titolare.
+    // Il proponente crea; solo il destinatario (aId) può accettare/rifiutare.
+    match /richiesteCambio/{id} {
+      allow read: if isTitolare() ||
+        (isLoggato() && (resource.data.daId == mioDipendenteId() || resource.data.aId == mioDipendenteId()));
+      allow create: if isLoggato() && request.resource.data.daId == mioDipendenteId();
+      allow update: if isTitolare() || (isLoggato() && resource.data.aId == mioDipendenteId());
+    }
+  }
+}
