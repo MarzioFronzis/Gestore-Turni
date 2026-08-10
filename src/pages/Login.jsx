@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAuth } from "../lib/AuthContext";
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, loginConGoogle } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errore, setErrore] = useState("");
@@ -18,6 +18,15 @@ export default function Login() {
       setErrore("Email o password non corretti.");
     } finally {
       setInCorso(false);
+    }
+  }
+
+  async function handleGoogle() {
+    setErrore("");
+    try {
+      await loginConGoogle();
+    } catch (err) {
+      setErrore("Accesso con Google non riuscito.");
     }
   }
 
@@ -47,6 +56,10 @@ export default function Login() {
         {errore && <p className="errore">{errore}</p>}
         <button type="submit" disabled={inCorso}>
           {inCorso ? "Accesso in corso…" : "Accedi"}
+        </button>
+        <div className="separatore">oppure</div>
+        <button type="button" className="btn-google" onClick={handleGoogle}>
+          Accedi con Google
         </button>
       </form>
     </div>
