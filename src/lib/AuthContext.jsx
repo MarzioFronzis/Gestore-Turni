@@ -2,6 +2,8 @@ import { createContext, useContext, useEffect, useState } from "react";
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
   signOut,
 } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -31,6 +33,8 @@ export function AuthProvider({ children }) {
   const login = (email, password) =>
     signInWithEmailAndPassword(auth, email, password);
 
+  const loginConGoogle = () => signInWithPopup(auth, new GoogleAuthProvider());
+
   const logout = () => signOut(auth);
 
   return (
@@ -41,6 +45,7 @@ export function AuthProvider({ children }) {
         isTitolare: profilo?.ruolo === "titolare",
         caricamento,
         login,
+        loginConGoogle,
         logout,
       }}
     >
