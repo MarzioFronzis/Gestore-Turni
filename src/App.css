@@ -82,6 +82,19 @@ label {
 }
 .errore { color: var(--allerta); font-size: 13px; margin: 0; }
 .info { color: var(--accento); font-size: 13px; }
+.separatore {
+  text-align: center;
+  font-size: 12px;
+  color: var(--testo-secondario);
+  margin: 4px 0;
+  position: relative;
+}
+.btn-google {
+  background: white;
+  border: 1px solid var(--bordo);
+  font-weight: 600;
+}
+.btn-google:hover { border-color: var(--inchiostro); }
 
 /* ---------- Layout ---------- */
 .caricamento {
